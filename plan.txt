@@ -1,0 +1,11 @@
+Number is: 1234
+
+3412
+0 4
+-continually generate random numbers until one matches the criteria
+
+-check if it matches:
+	-for each digit in the guess:
+		-if it was in the previous guess, compare their positions. if they're the same, decrement n_exact, else decrement n_misplaced
+	if both n_exact and n_misplaced are 0 at the end, return 1, else return :t:0
+ 
