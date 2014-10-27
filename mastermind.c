@@ -1,35 +1,61 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "logging.h"
 
 /* GLOBAL STATE */
 char **exact_strings;
-int n_strings = 0;
-char disqualified[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-int *counters;
+int n_exact_strings = 0;
+char **misplaced_strings;
+int n_misplaced_strings = 0;
+
+int *exact_counts;
+int misplaced_counts[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+int set_indices[10]  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int disqualified[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int used[10]         = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 int n_digits, digit_max, n_turns;
 long max_time;
+
 int best_exact, best_misplaced;
 
 /* Add string to list of 'exact strings' */
-int add_exact_string(char *str)
+void add_exact_string(char *str)
 {
-	strncpy(exact_strings[n_strings++], str, n_digits);
+	strncpy(exact_strings[n_exact_strings++], str, n_digits);
 }
 
-/* Update the counts of digits and positions in the exact strings */
-void update_counters()
+void add_misplaced_string(char *str)
+{
+	strncpy(misplaced_strings[n_misplaced_strings++], str, n_digits);
+}
+
+void update_misplaced_counts()
 {
 	int i, j, digit;
 
-	memset(counters, 0x00, 10 * n_digits * sizeof(int));
+	for (i = 0; i < n_misplaced_strings; i++)
+		for (j = 0; j < n_digits; j++) {
+			digit = misplaced_strings[i][j] - '0';
+			misplaced_counts[digit]++;			
+		}
+}
 
-	for (i = 0; i < n_strings; i++)
+/* Update the counts of digits and positions in the exact strings */
+void update_exact_counts()
+{
+	int i, j, digit;
+
+	memset(exact_counts, 0x00, 10 * n_digits * sizeof(int));
+
+	for (i = 0; i < n_exact_strings; i++)
 		for (j = 0; j < n_digits; j++) {
 			digit = exact_strings[i][j] - '0';
-			counters[(j * 10) + digit]++;
+			exact_counts[(j * 10) + digit]++;
 		}
 }
 
@@ -45,14 +71,14 @@ void insert(int *array, ssize_t sz, int pos, int val)
 }
 
 /* Find the best_exact highest counts */
-void find_highest(int *highest_idx)
+void find_highest_exact(int *highest_idx)
 {
 	int i, j, cnt;
 	int *highest_cnt = malloc(sizeof(int) * best_exact);
 	memset(highest_cnt, 0x00, sizeof(int) * best_exact);
 	
 	for (i = 0; i < (n_digits * 10); i++) {
-		cnt = counters[i];
+		cnt = exact_counts[i];
 		for (j = 0; j < best_exact; j++) 
 			if (cnt > highest_cnt[j]) {
 				insert(highest_cnt, best_exact, j, cnt);
@@ -64,110 +90,110 @@ void find_highest(int *highest_idx)
 	free(highest_cnt);
 }
 
-/* Check that no digits repeat or exceed the max_digit */
-int valid(char *guess) 
+/* Find the best_misplaced highest counts */
+void find_highest_misplaced(int *highest_digits)
 {
-	int i, j;
+	int i, j, cnt;
+	int *highest_cnt = malloc(sizeof(int) * best_exact);
+	memset(highest_cnt, 0x00, sizeof(int) * best_exact);
 
-	for (i = 0; i < n_digits; i++) {
-		if ((guess[i] - '0') > digit_max)
-			return 0;
-		for (j = i+1; j < n_digits; j++) 
-			if (guess[i] == guess[j])
-				return 0;
+	for (i = 0; i < 10; i++) {
+		cnt = misplaced_counts[i];
+		for (j = 0; j < best_misplaced; j++)
+			if (cnt > highest_cnt[j]) {
+				insert(highest_cnt, best_misplaced, j, cnt);
+				insert(highest_digits, best_misplaced, j, i);
+				break;
+			}
 	}
 
-	return 1;
-} 
+	free(highest_cnt);
+}
 
-void new_guess(char *guess_buffer)
+void exact_logic(char *guess_buffer)
 {
-	int guess_val, mod_val, i, j, index, digit;
-
-	if (best_exact == 0)
-		goto again;
-
-	int *set_indices = malloc(sizeof(int) * best_exact);
-	int *used_digits = malloc(sizeof(int) * best_exact);
+	int i, index, digit;
 	int *highest_indices = malloc(sizeof(int) * best_exact);
-
 	memset(highest_indices, 0x00, sizeof(int) * best_exact);
-	find_highest(highest_indices);	
+	find_highest_exact(highest_indices);
 
-	/* put in probable parts of solution */
 	for (i = 0; i < best_exact; i++) {
 		index = highest_indices[i] / 10;
 		digit = highest_indices[i] % 10;
 	
-		write_log("[%d] index=%d, digit=%d", i, index, digit);	
-
-		if (!disqualified[digit]) {
+		if (!disqualified[digit] && !used[digit]) {
 			guess_buffer[index] = digit + '0';
-			set_indices[i] = index;
+			set_indices[index] = 1;
+			used[digit] = 1;
 		}
 	}
 
-	/* semi-random guesses for the other parts */
-	int cont;
-again:
-	for (i = 0; i < n_digits; i++) {
-		cont = 0;
-		for (j = 0; j < best_exact; j++)
-			if (set_indices[j] == i) {
-				cont = 1;
-				break;
-			}
+	free(highest_indices);
+}
 
-		if (cont)
+void misplaced_logic(char *guess_buffer)
+{
+	int i, guess_val;
+	int *highest_digits = malloc(sizeof(int) * best_misplaced);
+	memset(highest_digits, 0x00, sizeof(int) * best_misplaced);
+	find_highest_misplaced(highest_digits);
+
+	for (i = 0; i < n_digits; i++) {
+		if (set_indices[i])
+		       continue;
+
+		guess_val = highest_digits[rand() % best_misplaced];
+		if (!disqualified[guess_val] && !used[guess_val]) {
+			guess_buffer[i] = guess_val + '0';
+			used[guess_val] = 1;
+			set_indices[i] = 1;
+		}
+	}
+}
+
+void new_guess(char *guess_buffer)
+{
+	int guess_val, i;
+	
+	if (best_exact != 0)
+		exact_logic(guess_buffer); /* use knowledge of strings with exactly placed digits */
+
+	if (best_misplaced != 0)
+		misplaced_logic(guess_buffer); /* use knowledge of strings with misplaced but correct digits */
+	
+	/* semi-random guesses for the other parts */
+	for (i = 0; i < n_digits; i++) {
+		if (set_indices[i])
 			continue;
 			
 		do {		
 			guess_val = rand() % (digit_max + 1);
-		} while(disqualified[guess_val]);
+		} while(disqualified[guess_val] || used[guess_val]);
 
 		guess_buffer[i] = guess_val + '0';
-	}
-
-	if (!valid(guess_buffer))
-		goto again;
-
-	if (best_exact > 0) {
-		free(set_indices);
-		free(used_digits);
-		free(highest_indices);
+		used[guess_val] = 1;
 	}
 }
 
 /* Generate a random number for the first guess */ 
 void random_guess(char* guess_buffer) 
 {
-	int guess_val, mod_val, i;
+	int guess_val,  i;
 
-	for (i = 0, mod_val = 0; i < n_digits; i++)
-		mod_val = (mod_val*10) + 9;
-
-	while (1) {
-		guess_val = rand() % mod_val;
-
-		i = 1;
-		while (guess_val != 0) {
-			guess_buffer[n_digits-i] = ((guess_val % 10) + '0');
-			guess_val /= 10;
-			i++;
-		}
-	
-		guess_buffer[n_digits] = '\0';
-
-		if (valid(guess_buffer))
-			break;
+	for (i = 0; i < n_digits; i++) {
+		do {
+			guess_val = rand() % (digit_max + 1);
+		} while (used[guess_val]);
+		
+		guess_buffer[i] = guess_val + '0';
+		used[guess_val] = 1;
 	}
 }
-
 
 int main(int argc, char **argv)
 {
 	srand(time(NULL));
-	set_file("mastermind.log");
+	set_log_file("mastermind.log");
 
 	int c_exact, c_misplaced;
 	int turn = 1;
@@ -175,16 +201,28 @@ int main(int argc, char **argv)
 	int i;
 
 	scanf("%d %d %d %ld", &digit_max, &n_digits, &n_turns, &max_time);
+
+	for (i = digit_max; i < 10; i++)
+		disqualified[i] = 1;
 	
 	exact_strings = malloc(sizeof(char *) * n_turns);
 	for (i = 0; i < n_turns; i++)
 		exact_strings[i] = malloc(n_digits);
 
-	counters = malloc(sizeof(int *) * n_digits * 10);
+	misplaced_strings = malloc(sizeof(char *) * n_turns);
+	for (i = 0; i < n_turns; i++)
+		misplaced_strings[i] = malloc(n_digits);
+
+	exact_counts = malloc(sizeof(int *) * n_digits * 10);
 
 	best_exact = best_misplaced = 0;
 
+	/* MAIN LOOP */
+
 	while (turn <= n_turns) {
+		memset(used, 0x00, sizeof(int) * 10);
+		memset(set_indices, 0x00, sizeof(int) * 10);
+
 		if (turn == 1) 
 			random_guess(guess_buffer);
 		else
@@ -197,10 +235,8 @@ int main(int argc, char **argv)
 			break;
 		
 		if ((c_exact == 0) && (c_misplaced == 0))
-			for (i = 0; i < n_digits; i++) {
-				write_log("main(): setting disqualified[%d] to 1\n", guess_buffer[i] - '0');
+			for (i = 0; i < n_digits; i++) 
 				disqualified[guess_buffer[i] - '0'] = 1;
-			}
 
 		else if (c_exact + c_misplaced == n_digits) {
 			for (i = 0; i <= digit_max; i++)
@@ -211,12 +247,15 @@ int main(int argc, char **argv)
 
 		if (c_exact > 0)
 			add_exact_string(guess_buffer);
-
+		if (c_misplaced > 0)
+			add_misplaced_string(guess_buffer);
+		
 		if (c_exact >= best_exact || ((c_exact + c_misplaced) >= (best_exact + best_misplaced))) {
 			best_exact = c_exact;
 			best_misplaced = c_misplaced;
 		}
 
+		update_exact_counts();
 		turn++;
 	}
 
@@ -225,10 +264,13 @@ int main(int argc, char **argv)
 	else
 		printf("Failed to solve!\n");
 	
-	for (i = 0; i < n_turns; i++)
+	for (i = 0; i < n_turns; i++) {
 		free(exact_strings[i]);
-	
-	free(counters);
+		free(misplaced_strings[i]);	
+	}
+
+	free(exact_counts);
 	free(exact_strings);
+	free(misplaced_strings);
 	return 0;
 }

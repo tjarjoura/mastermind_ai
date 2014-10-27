@@ -8,7 +8,7 @@
 char logfilename[20];
 FILE *logfile = NULL;
 
-void set_file(char *filename)
+void set_log_file(char *filename)
 {
 	strncpy(logfilename, filename, 20);
 }

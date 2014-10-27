@@ -1,36 +1,14 @@
+[Sat Oct 25 19:27:38 2014]: main(): setting disqualified[2] to 1
 
-[Fri Oct 24 17:42:15 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:42:21 2014]: main(): setting disqualified[4] to 1
+[Sat Oct 25 19:27:38 2014]: main(): setting disqualified[5] to 1
 
-[Fri Oct 24 17:42:21 2014]: main(): setting disqualified[8] to 1
+[Sat Oct 25 19:27:38 2014]: main(): setting disqualified[8] to 1
 
-[Fri Oct 24 17:42:21 2014]: main(): setting disqualified[3] to 1
+[Sat Oct 25 19:27:50 2014]: [0] index=0, digit=6
+[Sat Oct 25 19:27:55 2014]: main(): setting disqualified[6] to 1
 
-[Fri Oct 24 17:42:26 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:42:26 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:10 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:10 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:12 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:12 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:55 2014]: main(): setting disqualified[6] to 1
+[Sat Oct 25 19:27:55 2014]: main(): setting disqualified[3] to 1
 
-[Fri Oct 24 17:43:55 2014]: main(): setting disqualified[9] to 1
+[Sat Oct 25 19:27:55 2014]: main(): setting disqualified[9] to 1
 
-[Fri Oct 24 17:43:55 2014]: main(): setting disqualified[2] to 1
-
-[Fri Oct 24 17:43:57 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:43:57 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:44:09 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:44:59 2014]: main(): setting disqualified[9] to 1
-
-[Fri Oct 24 17:44:59 2014]: main(): setting disqualified[2] to 1
-
-[Fri Oct 24 17:44:59 2014]: main(): setting disqualified[8] to 1
-
-[Fri Oct 24 17:45:05 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:45:19 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:45:22 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:45:24 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:46:02 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:46:05 2014]: [0] index=0, digit=0
-[Fri Oct 24 17:46:07 2014]: [0] index=0, digit=0
+[Sat Oct 25 19:27:55 2014]: [0] index=0, digit=6
